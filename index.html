@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>NOVA TV — Onlayn Kinoteatr</title>
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg-main: #08080a;
+      --bg-secondary: #121216;
+      --bg-card: #18181f;
+      --bg-glass: rgba(18, 18, 22, 0.85);
+      --accent: #e50914;
+      --accent-hover: #ff1e29;
+      --accent-soft: rgba(229, 9, 20, 0.15);
+      --text-main: #ffffff;
+      --text-muted: #9ca3af;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      overflow-x: hidden;
+      padding-bottom: 85px;
+      user-select: none;
+    }
+
+    /* Scrollbar yashirish */
+    ::-webkit-scrollbar {
+      width: 0px;
+      height: 0px;
+    }
+
+    /* Yuqori navigatsiya (Header) */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      background: var(--bg-glass);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: 0.8px;
+    }
+
+    .brand-badge {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 15px rgba(229, 9, 20, 0.5);
+    }
+
+    .brand-badge svg {
+      width: 14px;
+      height: 14px;
+      fill: #fff;
+      margin-left: 2px;
+    }
+
+    .brand span {
+      color: var(--accent);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pro-pill {
+      background: linear-gradient(135deg, #e50914 0%, #99060d 100%);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 6px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      cursor: pointer;
+    }
+
+    /* Qidiruv maydoni */
+    .search-container {
+      padding: 12px 16px 4px;
+    }
+
+    .search-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      transition: var(--transition);
+    }
+
+    .search-box:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    .search-box svg {
+      width: 18px;
+      height: 18px;
+      stroke: var(--text-muted);
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+
+    .search-box input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-main);
+      font-size: 14px;
+    }
+
+    .search-box input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .clear-search {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 18px;
+      cursor: pointer;
+      display: none;
+      padding: 0 4px;
+    }
+
+    /* Janr filtrlari */
+    .genre-bar {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 12px 16px;
+    }
+
+    .genre-chip {
+      background: var(--bg-secondary);
+      color: var(--text-muted);
+      border: 1px solid var(--border-color);
+      padding: 7px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .genre-chip.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      box-shadow: 0 4px 12px rgba(229, 9, 20, 0.35);
+    }
+
+    /* Sahifa bo'limlari (Views) */
+    .view-section {
+      display: none;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .view-section.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Bosh sahifa: Asosiy Banner (Hero) */
+    .hero-wrapper {
+      padding: 4px 16px 16px;
+    }
+
+    .hero-card {
+      position: relative;
+      height: 230px;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      align-items: flex-end;
+      border: 1px solid var(--border-color);
+    }
+
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(8,8,10,0.1) 0%, rgba(8,8,10,0.65) 55%, rgba(8,8,10,0.98) 100%);
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      padding: 16px;
+      width: 100%;
+    }
+
+    .hero-tag {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .hero-title {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 4px;
+      line-height: 1.2;
+    }
+
+    .hero-meta {
+      font-size: 12px;
+      color: #d1d5db;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 9px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .btn-primary:active {
+      transform: scale(0.97);
+      background: var(--accent-hover);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.14);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 9px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+    }
+
+    /* Bo'lim sarlavhalari */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px 10px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .section-title::before {
+      content: "";
+      display: inline-block;
+      width: 4px;
+      height: 16px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    .section-link {
+      font-size: 12px;
+      color: var(--accent);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Kino kartalari (Grid va Gorizontal) */
+    .horizontal-scroll {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding: 0 16px 16px;
+    }
+
+    .horizontal-scroll .movie-card {
+      min-width: 135px;
+      max-width: 135px;
+    }
+
+    .movies-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      padding: 4px 16px 20px;
+    }
+
+    @media (min-width: 500px) {
+      .movies-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .movie-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      position: relative;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .movie-card:active {
+      transform: scale(0.97);
+    }
+
+    .poster-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 2 / 3;
+      background: #20202a;
+      overflow: hidden;
+    }
+
+    .poster-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .card-rating {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      color: #fbbf24;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 6px;
+      border-radius: 6px;
+    }
+
+    .card-badge {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .fav-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 3;
+    }
+
+    .fav-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .fav-btn svg {
+      width: 15px;
+      height: 15px;
+      fill: currentColor;
+    }
+
+    .card-body {
+      padding: 10px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+
+    .card-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Bo'sh holat (Empty state) */
+    .empty-state {
+      text-align: center;
+      padding: 45px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state svg {
+      width: 48px;
+      height: 48px;
+      stroke: var(--text-muted);
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    .empty-state h4 {
+      color: var(--text-main);
+      font-size: 16px;
+      margin-bottom: 6px;
+    }
+
+    .empty-state p {
+      font-size: 13px;
+    }
+
+    /* Profil bo'limi */
+    .profile-box {
+      padding: 16px;
+    }
+
+    .profile-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .avatar {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #7f1d1d);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .profile-info h3 {
+      font-size: 17px;
+      margin-bottom: 4px;
+    }
+
+    .profile-info p {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .stat-item {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      text-align: center;
+    }
+
+    .stat-item strong {
+      display: block;
+      font-size: 18px;
+      color: var(--accent);
+      margin-bottom: 2px;
+    }
+
+    .stat-item span {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .settings-list {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .setting-row:last-child {
+      border-bottom: none;
+    }
+
+    .setting-row span.val {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Modal Pleyer oynasi */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .player-sheet {
+      width: 100%;
+      max-width: 600px;
+      max-height: 92vh;
+      background: var(--bg-secondary);
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+      border-top: 1px solid var(--border-color);
+      overflow-y: auto;
+      padding-bottom: 24px;
+      animation: slideUp 0.25s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .modal-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .modal-top h4 {
+      font-size: 15px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 80%;
+    }
+
+    .close-modal {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #fff;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .video-box {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+    }
+
+    .video-box video {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .modal-details {
+      padding: 16px;
+    }
+
+    .modal-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+      font-size: 12px;
+    }
+
+    .meta-pill {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      padding: 4px 10px;
+      border-radius: 6px;
+      color: #d1d5db;
+    }
+
+    .modal-desc {
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .episodes-box {
+      margin-top: 14px;
+    }
+
+    .episodes-title {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .episode-list {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .ep-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .ep-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .legal-note {
+      margin-top: 14px;
+      font-size: 11px;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.03);
+      padding: 8px 10px;
+      border-radius: 6px;
+      border-left: 3px solid var(--accent);
+    }
+
+    /* Pastki menyu (Bottom Navigation) */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      background: var(--bg-glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid var(--border-color);
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
+    }
+
+    .nav-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .nav-btn svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .nav-btn.active {
+      color: var(--accent);
+    }
+
+    /* Bildirishnoma (Toast) */
+    .toast {
+      position: fixed;
+      bottom: 85px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1f2937;
+      color: #fff;
+      padding: 9px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      pointer-events: none;
+      transition: 0.25s ease;
+      z-index: 120;
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Yuqori panel -->
+  <header class="header">
+    <div class="brand">
+      <div class="brand-badge">
+        <svg viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>
+      </div>
+      <div>NOVA <span>TV</span></div>
+    </div>
+    <div class="header-actions">
+      <button class="pro-pill" id="proBtn">DEMO REJIM</button>
+    </div>
+  </header>
+
+  <!-- Qidiruv va Janrlar (Asosiy katalog sahifalarida ko'rinadi) -->
+  <div id="filterArea">
+    <div class="search-container">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="searchInput" placeholder="Film, serial yoki janr qidiring..." />
+        <button class="clear-search" id="clearSearch" aria-label="Tozalash">&times;</button>
+      </div>
+    </div>
+
+    <div class="genre-bar" id="genreBar"></div>
+  </div>
+
+  <!-- 1. BOSH SAHIFA -->
+  <main id="view-home" class="view-section active">
+    <div class="hero-wrapper" id="heroContainer"></div>
+
+    <div class="section-header">
+      <h2 class="section-title">Trenddagi premyeralar</h2>
+      <span class="section-link" data-target="movies">Barchasi &rarr;</span>
+    </div>
+    <div class="horizontal-scroll" id="trendingRow"></div>
+
+    <div class="section-header">
+      <h2 class="section-title">Mashhur seriallar</h2>
+      <span class="section-link" data-target="series">Barchasi &rarr;</span>
+    </div>
+    <div class="horizontal-scroll" id="seriesRow"></div>
+
+    <div class="section-header">
+      <h2 class="section-title">Barcha tavsiyalar</h2>
+    </div>
+    <div class="movies-grid" id="homeGrid"></div>
+  </main>
+
+  <!-- 2. FILMLAR KATALOGI -->
+  <section id="view-movies" class="view-section">
+    <div class="section-header">
+      <h2 class="section-title">Filmlar katalogi</h2>
+    </div>
+    <div class="movies-grid" id="moviesGrid"></div>
+  </section>
+
+  <!-- 3. SERIALLAR BO'LIMI -->
+  <section id="view-series" class="view-section">
+    <div class="section-header">
+      <h2 class="section-title">Seriallar</h2>
+    </div>
+    <div class="movies-grid" id="seriesGrid"></div>
+  </section>
+
+  <!-- 4. SEVIMLILAR BO'LIMI -->
+  <section id="view-favorites" class="view-section">
+    <div class="section-header">
+      <h2 class="section-title">Sevimlilarim</h2>
+    </div>
+    <div class="movies-grid" id="favoritesGrid"></div>
+  </section>
+
+  <!-- 5. PROFIL BO'LIMI -->
+  <section id="view-profile" class="view-section">
+    <div class="profile-box">
+      <div class="profile-card">
+        <div class="avatar" id="userAvatar">N</div>
+        <div class="profile-info">
+          <h3 id="userName">Mehmon foydalanuvchi</h3>
+          <p id="userHandle">Telegram Mini App orqali ulandi</p>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-item">
+          <strong id="statTotal">0</strong>
+          <span>Katalog</span>
+        </div>
+        <div class="stat-item">
+          <strong id="statFavs">0</strong>
+          <span>Sevimlilar</span>
+        </div>
+        <div class="stat-item">
+          <strong>1080p</strong>
+          <span>Sifat</span>
+        </div>
+      </div>
+
+      <div class="settings-list">
+        <div class="setting-row">
+          <span>Ilova tili</span>
+          <span class="val">O‘zbekcha (UZ)</span>
+        </div>
+        <div class="setting-row">
+          <span>Video manbalari</span>
+          <span class="val">Qonuniy Open-Source treylerlar</span>
+        </div>
+        <div class="setting-row">
+          <span>Ma’lumotlar bazasi</span>
+          <span class="val">Mahalliy (Namunaviy)</span>
+        </div>
+        <div class="setting-row" id="clearFavsBtn">
+          <span style="color: #f87171;">Sevimlilarni tozalash</span>
+          <span class="val">&rarr;</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VIDEO PLEYER VA MA'LUMOT MODALI -->
+  <div class="modal-backdrop" id="playerModal">
+    <div class="player-sheet">
+      <div class="modal-top">
+        <h4 id="modalTitle">Film nomi</h4>
+        <button class="close-modal" id="closeModalBtn">&times;</button>
+      </div>
+      <div class="video-box">
+        <video id="videoPlayer" controls playsinline preload="metadata"></video>
+      </div>
+      <div class="modal-details">
+        <div class="modal-meta" id="modalMeta"></div>
+        <p class="modal-desc" id="modalDesc"></p>
+
+        <button class="btn-primary" id="modalFavBtn" style="width: 100%; justify-content: center;">
+          Sevimlilarga qo‘shish
+        </button>
+
+        <div class="episodes-box" id="episodesBox" style="display: none;">
+          <div class="episodes-title">Qismlarni tanlang:</div>
+          <div class="episode-list" id="episodeList"></div>
+        </div>
+
+        <div class="legal-note">
+          Eslatma: Ushbu ilova namunaviy rejimda ishlamoqda. Namoyish etilayotgan videolar Creative Commons (Blender Open Movie) ochiq litsenziyasiga ega rasmiy treylerlardir.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PASTKI NAVIGATSIYA -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="home">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+      <span>Asosiy</span>
+    </button>
+    <button class="nav-btn" data-tab="movies">
+      <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg>
+      <span>Filmlar</span>
+    </button>
+    <button class="nav-btn" data-tab="series">
+      <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>
+      <span>Seriallar</span>
+    </button>
+    <button class="nav-btn" data-tab="favorites">
+      <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+      <span>Sevimlilar</span>
+    </button>
+    <button class="nav-btn" data-tab="profile">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      <span>Profil</span>
+    </button>
+  </nav>
+
+  <!-- BILDIRISHNOMA -->
+  <div class="toast" id="toastMsg">Saqlandi</div>
+
+  <script>
+    // 1. TELEGRAM WEBAPP SDK INTEGRATSIYASI
+    const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+      try {
+        tg.setHeaderColor('#08080a');
+        tg.setBackgroundColor('#08080a');
+      } catch (e) {}
+    }
+
+    // 2. NAMUNAVIY VA QONUNIY MEDIA MA'LUMOTLAR BAZASI (Creative Commons / Open Movies)
+    const CATALOG = [
+      {
+        id: "m1",
+        title: "Po‘lat Ko‘z: Toshkent Siri",
+        type: "movie",
+        genre: "Fantastika",
+        year: 2026,
+        rating: "8.9",
+        duration: "12 daq",
+        badge: "PREMYERA",
+        poster: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80",
+        backdrop: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1000&q=80",
+        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
+        description: "Yaqin kelajakda sun’iy intellekt va insoniyat o‘rtasidagi hal qiluvchi to‘qnashuv. Maxsus guruh shaharni qutqarish uchun vaqt sinovidan o‘tadi (Blender Open Movie — Tears of Steel)."
+      },
+      {
+        id: "m2",
+        title: "Ajdarho Qo‘riqchisi: Sintel",
+        type: "movie",
+        genre: "Sarguzasht",
+        year: 2025,
+        rating: "8.7",
+        duration: "15 daq",
+        badge: "FULL HD",
+        poster: "https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=600&q=80",
+        backdrop: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1000&q=80",
+        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
+        description: "Yosh jangchi qiz o‘zining yo‘qolgan ajdarho do‘stini qidirib, xavfli tog‘lar va qadimiy sarhadlardan o‘tadi. Ta’sirli va yuqori sifatli animatsion film (Blender Open Movie — Sintel)."
+      },
+      {
+        id: "m3",
+        title: "Katta Quyonning Sarguzashti",
+        type: "movie",
+        genre: "Komediya",
+        year: 2024,
+        rating: "8.2",
+        duration: "10 daq",
+        badge: "OILAVIY",
+        poster: "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=600&q=80",
+        backdrop: "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1000&q=80",
+        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+        description: "Tabiat qo‘ynida yashovchi mehribon va ulkan quyon o‘rmon bezorilariga qarshi ajoyib reja tuzadi. Quvnoq oilaviy animatsion komediya (Blender Open Movie — Big Buck Bunny)."
+      },
+      {
+        id: "m4",
+        title: "Fildagi Orzular",
+        type: "movie",
+        genre: "Fantastika",
+        year: 2024,
+        rating: "7.9",
+        duration: "11 daq",
+        badge: "HD",
+        poster: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=600&q=80",
+        backdrop: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1000&q=80",
+        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+        description: "Sirli mexanik dunyo ichida sayohat qilayotgan ikki qahramonning falsafiy va kutilmagan sarguzashtlari (Dunyodagi ilk ochiq kodli 3D film — Elephants Dream)."
+      },
+      {
+        id: "s1",
+        title: "Kiber Soqchilar: Yangi Davr",
+        type: "series",
+        genre: "Jangari",
+        year: 2026,
+        rating: "9.1",
+        duration: "1-fasl (3 qism)",
+        badge: "YANGI FASL",
+        poster: "https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=600&q=80",
+        backdrop: "https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=1000&q=80",
+        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+        description: "Raqamli tarmoqlarni himoya qiluvchi yosh dasturchilar jamoasi xalqaro kiber-hujumni to‘xtatishga kirishadi.",
+        episodes: [
+          { ep: 1, title: "1-qism: Signal", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" },
+          { ep: 2, title: "2-qism: Qochish", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4" },
+          { ep: 3, title: "3-qism: Yechim", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4" }
+        ]
+      },
+      {
+        id: "s2",
+        title: "Tezlik Chegarasi: Poyga",
+        type: "series",
+        genre: "Sarguzasht",
+        year: 2025,
+        rating: "8.5",
+        duration: "1-fasl (2 qism)",
+        badge: "TOP SERIAL",
+        poster: "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=600&q=80",
+        backdrop: "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=1000&q=80",
+        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4",
+        description: "Avtosport olamidagi eng qiyin marafonlar, texnik sinovlar va chempionlik uchun kurash haqida hujjatli-sarguzasht serial.",
+        episodes: [
+          { ep: 1, title: "1-qism: Start chizig‘i", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4" },
+          { ep: 2, title: "2-qism: Tog‘ dovoni", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackSeeTheWorld.mp4" }
+        ]
+      },
+      {
+        id: "s3",
+        title: "Tungi Shahar Chiroqlari",
+        type: "series",
+        genre: "Drama",
+        year: 2025,
+        rating: "8.4",
+        duration: "1-fasl (2 qism)",
+        badge: "EKSKLYUZIV",
+        poster: "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?auto=format&fit=crop&w=600&q=80",
+        backdrop: "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?auto=format&fit=crop&w=1000&q=80",
+        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoy.mp4",
+        description: "Katta megapolisda o‘z orzulari sari intilayotgan ijodkor yoshlarning sinovlarga boy hayot yo‘li.",
+        episodes: [
+          { ep: 1, title: "1-qism: Ilk qadam", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoy.mp4" },
+          { ep: 2, title: "2-qism: Katta sahna", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4" }
+        ]
+      },
+      {
+        id: "m5",
+        title: "Cho‘qqilar Chorlovi",
+        type: "movie",
+        genre: "Sarguzasht",
+        year: 2025,
+        rating: "8.0",
+        duration: "9 daq",
+        badge: "4K TREYLER",
+        poster: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=80",
+        backdrop: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1000&q=80",
+        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+        description: "Yovvoyi tabiat va zabt etilmagan tog‘ cho‘qqilari bo‘ylab unutilmas vizual ekspeditsiya."
+      }
+    ];
+
+    const GENRES = ["Barchasi", "Fantastika", "Sarguzasht", "Jangari", "Komediya", "Drama"];
+
+    // 3. ILOVA HOLATI (STATE)
+    let activeTab = "home";
+    let activeGenre = "Barchasi";
+    let searchQuery = "";
+    let currentModalItem = null;
+    let favorites = JSON.parse(localStorage.getItem("nova_tv_favs") || "[]");
+
+    // 4. DOM ELEMENTLAR
+    const genreBar = document.getElementById("genreBar");
+    const searchInput = document.getElementById("searchInput");
+    const clearSearch = document.getElementById("clearSearch");
+    const filterArea = document.getElementById("filterArea");
+    const heroContainer = document.getElementById("heroContainer");
+    const trendingRow = document.getElementById("trendingRow");
+    const seriesRow = document.getElementById("seriesRow");
+    const homeGrid = document.getElementById("homeGrid");
+    const moviesGrid = document.getElementById("moviesGrid");
+    const seriesGrid = document.getElementById("seriesGrid");
+    const favoritesGrid = document.getElementById("favoritesGrid");
+    const toastMsg = document.getElementById("toastMsg");
+
+    // Modal elementlar
+    const playerModal = document.getElementById("playerModal");
+    const closeModalBtn = document.getElementById("closeModalBtn");
+    const videoPlayer = document.getElementById("videoPlayer");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalMeta = document.getElementById("modalMeta");
+    const modalDesc = document.getElementById("modalDesc");
+    const modalFavBtn = document.getElementById("modalFavBtn");
+    const episodesBox = document.getElementById("episodesBox");
+    const episodeList = document.getElementById("episodeList");
+
+    // 5. YORDAMCHI FUNKSIYALAR
+    function showToast(text) {
+      toastMsg.textContent = text;
+      toastMsg.classList.add("show");
+      setTimeout(() => toastMsg.classList.remove("show"), 2000);
+    }
+
+    function saveFavorites() {
+      localStorage.setItem("nova_tv_favs", JSON.stringify(favorites));
+      updateProfileStats();
+    }
+
+    function toggleFavorite(id, event) {
+      if (event) event.stopPropagation();
+      const idx = favorites.indexOf(id);
+      if (idx > -1) {
+        favorites.splice(idx, 1);
+        showToast("Sevimlilardan olib tashlandi");
+      } else {
+        favorites.push(id);
+        showToast("Sevimlilarga qo‘shildi ❤️");
+      }
+      saveFavorites();
+      renderAll();
+      if (currentModalItem && currentModalItem.id === id) {
+        updateModalFavButton(id);
+      }
+    }
+
+    function filterItem(item) {
+      const matchesGenre = activeGenre === "Barchasi" || item.genre === activeGenre;
+      const q = searchQuery.trim().toLowerCase();
+      const matchesSearch = !q ||
+        item.title.toLowerCase().includes(q) ||
+        item.genre.toLowerCase().includes(q) ||
+        item.description.toLowerCase().includes(q);
+      return matchesGenre && matchesSearch;
+    }
+
+    // 6. KARTA YARATISH FUNKSIYASI
+    function createMovieCard(item) {
+      const isFav = favorites.includes(item.id);
+      const card = document.createElement("div");
+      card.className = "movie-card";
+      card.innerHTML = `
+        <div class="poster-wrap">
+          <img src="${item.poster}" alt="${item.title}" loading="lazy" />
+          <div class="card-rating">★ ${item.rating}</div>
+          <div class="card-badge">${item.badge}</div>
+          <button class="fav-btn ${isFav ? "active" : ""}" aria-label="Sevimli">
+            <svg viewBox="0 0 24 24">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="card-body">
+          <div class="card-title">${item.title}</div>
+          <div class="card-sub">
+            <span>${item.genre}</span>
+            <span>${item.year}</span>
+          </div>
+        </div>
+      `;
+
+      const favButton = card.querySelector(".fav-btn");
+      favButton.addEventListener("click", (e) => toggleFavorite(item.id, e));
+      card.addEventListener("click", () => openPlayerModal(item));
+      return card;
+    }
+
+    // 7. SAHIFALARNI CHIZISH (RENDER)
+    function renderGenres() {
+      genreBar.innerHTML = "";
+      GENRES.forEach((g) => {
+        const btn = document.createElement("button");
+        btn.className = `genre-chip ${activeGenre === g ? "active" : ""}`;
+        btn.textContent = g;
+        btn.addEventListener("click", () => {
+          activeGenre = g;
+          renderGenres();
+          renderAll();
+        });
+        genreBar.appendChild(btn);
+      });
+    }
+
+    function renderHero() {
+      const heroItem = CATALOG[0];
+      heroContainer.innerHTML = `
+        <div class="hero-card" style="background-image: url('${heroItem.backdrop}');">
+          <div class="hero-overlay"></div>
+          <div class="hero-content">
+            <span class="hero-tag">${heroItem.badge} • ${heroItem.genre}</span>
+            <h1 class="hero-title">${heroItem.title}</h1>
+            <div class="hero-meta">
+              <span>★ ${heroItem.rating}</span>
+              <span>•</span>
+              <span>${heroItem.year}-yil</span>
+              <span>•</span>
+              <span>${heroItem.duration}</span>
+            </div>
+            <div class="hero-buttons">
+              <button class="btn-primary" id="heroPlayBtn">
+                ▶ Tomosha qilish
+              </button>
+              <button class="btn-secondary" id="heroFavBtn">
+                ${favorites.includes(heroItem.id) ? "✓ Saqlangan" : "+ Sevimlilar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById("heroPlayBtn").addEventListener("click", () => openPlayerModal(heroItem));
+      document.getElementById("heroFavBtn").addEventListener("click", (e) => toggleFavorite(heroItem.id, e));
+    }
+
+    function renderListInto(container, list, emptyTitle, emptyDesc) {
+      container.innerHTML = "";
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state" style="grid-column: 1 / -1; width: 100%;">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="8" y1="15" x2="16" y2="15"></line>
+              <line x1="9" y1="9" x2="9.01" y2="9"></line>
+              <line x1="15" y1="9" x2="15.01" y2="9"></line>
+            </svg>
+            <h4>${emptyTitle}</h4>
+            <p>${emptyDesc}</p>
+          </div>
+        `;
+        return;
+      }
+      list.forEach((item) => container.appendChild(createMovieCard(item)));
+    }
+
+    function renderAll() {
+      renderHero();
+
+      const filteredAll = CATALOG.filter(filterItem);
+      const filteredMovies = CATALOG.filter((i) => i.type === "movie" && filterItem(i));
+      const filteredSeries = CATALOG.filter((i) => i.type === "series" && filterItem(i));
+      const filteredFavs = CATALOG.filter((i) => favorites.includes(i.id) && filterItem(i));
+
+      // Bosh sahifa qatorlari
+      trendingRow.innerHTML = "";
+      CATALOG.filter((i) => i.type === "movie").forEach((item) => {
+        trendingRow.appendChild(createMovieCard(item));
+      });
+
+      seriesRow.innerHTML = "";
+      CATALOG.filter((i) => i.type === "series").forEach((item) => {
+        seriesRow.appendChild(createMovieCard(item));
+      });
+
+      renderListInto(
+        homeGrid,
+        filteredAll,
+        "Hech narsa topilmadi",
+        "Qidiruv so‘zini yoki janr filtrini o‘zgartirib ko‘ring."
+      );
+
+      renderListInto(
+        moviesGrid,
+        filteredMovies,
+        "Filmlar topilmadi",
+        "Tanlangan janr bo‘yicha film mavjud emas."
+      );
+
+      renderListInto(
+        seriesGrid,
+        filteredSeries,
+        "Seriallar topilmadi",
+        "Tanlangan janr bo‘yicha serial mavjud emas."
+      );
+
+      renderListInto(
+        favoritesGrid,
+        filteredFavs,
+        "Sevimlilar ro‘yxati bo‘sh",
+        "Yoqqan film yoki serial ustidagi yurakcha tugmasini bosing."
+      );
+
+      updateProfileStats();
+    }
+
+    // 8. MODAL PLEYERNI BOSHQARISH
+    function updateModalFavButton(id) {
+      const isFav = favorites.includes(id);
+      modalFavBtn.textContent = isFav ? "✓ Sevimlilarda saqlangan" : "♥ Sevimlilarga qo‘shish";
+      modalFavBtn.style.background = isFav ? "#27272a" : "var(--accent)";
+    }
+
+    function openPlayerModal(item) {
+      currentModalItem = item;
+      modalTitle.textContent = item.title;
+      modalDesc.textContent = item.description;
+
+      modalMeta.innerHTML = `
+        <span class="meta-pill">★ ${item.rating}</span>
+        <span class="meta-pill">${item.genre}</span>
+        <span class="meta-pill">${item.year}-yil</span>
+        <span class="meta-pill">${item.duration}</span>
+      `;
+
+      updateModalFavButton(item.id);
+
+      // Agar serial bo'lsa, qismlarni chiqarish
+      if (item.type === "series" && item.episodes && item.episodes.length > 0) {
+        episodesBox.style.display = "block";
+        episodeList.innerHTML = "";
+        item.episodes.forEach((epObj, index) => {
+          const btn = document.createElement("button");
+          btn.className = `ep-btn ${index === 0 ? "active" : ""}`;
+          btn.textContent = epObj.title;
+          btn.addEventListener("click", () => {
+            document.querySelectorAll(".ep-btn").forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            videoPlayer.src = epObj.url;
+            videoPlayer.play().catch(() => {});
+          });
+          episodeList.appendChild(btn);
+        });
+        videoPlayer.src = item.episodes[0].url;
+      } else {
+        episodesBox.style.display = "none";
+        videoPlayer.src = item.videoUrl;
+      }
+
+      playerModal.classList.add("open");
+      videoPlayer.play().catch(() => {});
+    }
+
+    function closePlayerModal() {
+      videoPlayer.pause();
+      videoPlayer.removeAttribute("src");
+      videoPlayer.load();
+      playerModal.classList.remove("open");
+      currentModalItem = null;
+    }
+
+    closeModalBtn.addEventListener("click", closePlayerModal);
+    playerModal.addEventListener("click", (e) => {
+      if (e.target === playerModal) closePlayerModal();
+    });
+
+    modalFavBtn.addEventListener("click", () => {
+      if (currentModalItem) toggleFavorite(currentModalItem.id);
+    });
+
+    // 9. NAVIGATSIYA VA QIDIRUV HODISALARI
+    function switchTab(tabName) {
+      activeTab = tabName;
+      document.querySelectorAll(".view-section").forEach((sec) => sec.classList.remove("active"));
+      const targetSec = document.getElementById(`view-${tabName}`);
+      if (targetSec) targetSec.classList.add("active");
+
+      document.querySelectorAll(".nav-btn").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.tab === tabName);
+      });
+
+      // Profil bo'limida qidiruv panelini yashirish
+      filterArea.style.display = tabName === "profile" ? "none" : "block";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    document.querySelectorAll(".nav-btn").forEach((btn) => {
+      btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+    });
+
+    document.querySelectorAll(".section-link").forEach((link) => {
+      link.addEventListener("click", () => switchTab(link.dataset.target));
+    });
+
+    searchInput.addEventListener("input", (e) => {
+      searchQuery = e.target.value;
+      clearSearch.style.display = searchQuery.length > 0 ? "block" : "none";
+      renderAll();
+    });
+
+    clearSearch.addEventListener("click", () => {
+      searchInput.value = "";
+      searchQuery = "";
+      clearSearch.style.display = "none";
+      renderAll();
+    });
+
+    // 10. PROFIL MA'LUMOTLARI
+    function initUserProfile() {
+      const user = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : null;
+      if (user) {
+        const fullName = [user.first_name, user.last_name].filter(Boolean).join(" ");
+        document.getElementById("userName").textContent = fullName || "Telegram Foydalanuvchi";
+        document.getElementById("userHandle").textContent = user.username ? `@${user.username}` : `ID: ${user.id}`;
+        document.getElementById("userAvatar").textContent = (fullName || "U").charAt(0).toUpperCase();
+      }
+    }
+
+    function updateProfileStats() {
+      document.getElementById("statTotal").textContent = CATALOG.length;
+      document.getElementById("statFavs").textContent = favorites.length;
+    }
+
+    document.getElementById("clearFavsBtn").addEventListener("click", () => {
+      favorites = [];
+      saveFavorites();
+      renderAll();
+      showToast("Barcha sevimlilar tozalandi");
+    });
+
+    document.getElementById("proBtn").addEventListener("click", () => {
+      showToast("NOVA TV — Namunaviy Demo Versiya");
+    });
+
+    // Dastlabki ishga tushirish
+    initUserProfile();
+    renderGenres();
+    renderAll();
+  </script>
+</body>
+</html>
